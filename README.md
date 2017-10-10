@@ -4,6 +4,7 @@ Handy links
 ------------
 
 http://www.katrinerk.com/courses/python-worksheets/language-models-in-python
+
 http://nlpforhackers.io/language-models/
 
 The data
