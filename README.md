@@ -11,6 +11,8 @@ https://stackoverflow.com/questions/37504391/train-ngrammodel-in-python
 
 https://www.inf.ed.ac.uk/teaching/courses/fnlp/Tutorials/1_LMs/lab1.pdf
 
+https://appliedmachinelearning.wordpress.com/2017/04/30/language-identification-from-texts-using-bi-gram-model-pythonnltk/
+
 The data
 --------
 
