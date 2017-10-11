@@ -7,6 +7,10 @@ http://www.katrinerk.com/courses/python-worksheets/language-models-in-python
 
 http://nlpforhackers.io/language-models/
 
+https://stackoverflow.com/questions/37504391/train-ngrammodel-in-python
+
+https://www.inf.ed.ac.uk/teaching/courses/fnlp/Tutorials/1_LMs/lab1.pdf
+
 The data
 --------
 
