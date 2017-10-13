@@ -2,6 +2,7 @@
 
 Handy links
 ------------
+http://www.ling.helsinki.fi/kit/2009s/clt231/NLTK/book/ch02-AccessingTextCorporaAndLexicalResources.html#generating-random-text-with-bigrams
 
 http://www.katrinerk.com/courses/python-worksheets/language-models-in-python
 
