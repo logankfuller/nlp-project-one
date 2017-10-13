@@ -1,7 +1,10 @@
-import os, nltk
+import os
+import nltk
 from nltk.tokenize import RegexpTokenizer
 
 trivialTokenizer = RegexpTokenizer(r"\d+|Mr\.|Mrs\.|Dr\.|\b[A-Z]\.|[a-zA-Z_]+-[a-zA-Z_]+-[a-zA-Z_]+|[a-zA-Z_]+-[a-zA-Z_]+|[a-zA-Z_]+|--|'s|'t|'d|'ll|'m|'re|'ve|[.,:!?;\"'()\[\]&@#-]")
+
+WORD_TYPE_COUNT = 10
 
 def file_input(userPath):
    path = input(userPath)
@@ -9,6 +12,11 @@ def file_input(userPath):
       return path
    else:
       return file_input('Enter an existing file directory: ')
+
+def probability(data):
+   for item in data:
+      print(item)
+      print(data[item], str('/'), len(trainingData), '=', data[item]/len(trainingData))
 
 directory = file_input('Enter a directory: ')
 
@@ -25,27 +33,10 @@ trainingData = ''.join(trainingData)
 
 # Begin tokenizing
 trainingData = trivialTokenizer.tokenize(trainingData)
-print(len(trainingData))
 
 # Create a frequency distribution using the tokenized training data
 freqDist = nltk.FreqDist(trainingData)
-print(list(freqDist.keys())[:10])
-print(freqDist["the"] / len(freqDist.keys()))
+commonFreqDist = nltk.FreqDist(trainingData).most_common(WORD_TYPE_COUNT)
 
-'''
-freq_training = nltk.FreqDist(trainingData)
-cfreq_training = nltk.ConditionalFreqDist(nltk.bigrams(trainingData))
-cprob_training = nltk.ConditionalProbDist(cfreq_training, nltk.MLEProbDist)
-
-print(freq_training.most_common(10), end='\n\n')
-print(cfreq_training["the"].most_common(10), end='\n\n')
-print(cprob_training["my"].samples(), end='\n\n')
-
-word = "Doctor"
-for index in range(10):
-   word = cprob_training[word].generate()
-   print(word, end=" ")
-
-print(list(freq_training.keys())[:20])
-print(freq_training.most_common(20))
-'''
+bigrams = list(nltk.bigrams(trainingData))
+bigramFreqDist = nltk.FreqDist(bigrams)
