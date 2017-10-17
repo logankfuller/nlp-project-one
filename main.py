@@ -37,6 +37,8 @@ trainingData = ''.join(trainingData)
 # Begin tokenizing
 trainingData = trivialTokenizer.tokenize(trainingData)
 
+unigramCount = len(trainingData)
+
 freqDist = nltk.FreqDist(trainingData)
 commonFreqDist = nltk.FreqDist(trainingData).most_common(WORD_TYPE_COUNT)
 
@@ -86,59 +88,39 @@ for v in vWordTypes:
     for x in tempList:
         tempDict[x] += 1
 
+    # ------------ Smoothing
+    
+    # Get list of bigrams with counts 1-9
+    lowFreqBigramCount = 0
+    for bigram in tempDict.items():
+        if bigram[1] <= 9 and bigram[1] > 0:
+            lowFreqBigramCount += 1
+
+    # Increase each bigram count by 1/lowFreqBigramCount
+    additiveBigram = 0
+    if lowFreqBigramCount != 0:
+        additiveBigram = 1/lowFreqBigramCount
+        for bigram in tempDict.items():
+            tempDict[bigram[0]] += additiveBigram
+
+    # Increase each unigram count by V/lowFreqBigramCount
+    currentUnigramCount = 0
+    additiveUnigram = 0
+    if lowFreqBigramCount != 0:
+        additiveUnigram = WORD_TYPE_COUNT / lowFreqBigramCount
+        currentUnigramCount = freqDist[v] + additiveUnigram
+        
+    # Probabilities
+    for bigram in tempDict.items():
+        if currentUnigramCount != 0:
+            tempDict[bigram[0]] /= currentUnigramCount
+
     model[v] = tempDict
 
-'''
-for dictionary in model.items():
-    if dictionary[0] in sortedBigramDict:
-        termList = sortedBigramDict[dictionary[0]]
-        #print('Key: ' + dictionary[0] + ' | Value: ' + str(termList))
-        for value in termList:
-            print(dictionary[0], value)
+#print(model['plot'])
 
-print(model['plot'])
-    '''
-        #for term in termList:
-            #if dictionary[1] == term:
-            #   dictionary[1][term] += 1
-
-
-'''
-for key in model.items():
-    if key[0] in sortedBigramDict:
-        termList = sortedBigramDict[key[0]]
-        #print(x[0]) ('term')
-        #print(x[1]) ['asdf', ...]
-        for innerKeys in key[1].items():
-            for value in termList:
-                #print(innerKeys[1])
-                innerKeys[0] += 1
-
-print(model['plot'])
-'''
-
-'''
-# Create a frequency distribution using the tokenized training data
-commonFreqDist = nltk.FreqDist(nltk.bigrams(trainingData)).most_common(WORD_TYPE_COUNT)
-
-# Create a blank list and append 'WORD_TYPE_COUNT' most common bigrams
-bigramList = []
-
-for bigram in commonFreqDist:
-    bigramList.append(bigram[0])
-
-bigrams = list(nltk.bigrams(trainingData))
-
-# Create a dictionary of words and their counts (or probabilities if we manage) of words that follow after
-model = defaultdict(lambda: defaultdict(lambda: 0))
-
-for wordOne, wordTwo in bigramList:
-    model[wordOne][wordTwo] += 1
-
-for wordOne in model:
-    divisibleCount = float(sum(model[wordOne].values()))
-    for wordTwo in model:
-        model[wordOne][wordTwo] /= divisibleCount
-
-print(model)
-'''
+# SANITY CHECK (THERE IS NO SANITY LEFT IN US)
+probability = 0
+for word in model['plot'].items():
+    probability += word[1]
+print(probability)
