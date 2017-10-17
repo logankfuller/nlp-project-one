@@ -4,10 +4,19 @@ from nltk.tokenize import RegexpTokenizer
 from collections import defaultdict
 from itertools import *
 import copy
+import random
 
 trivialTokenizer = RegexpTokenizer(r"\d+|Mr\.|Mrs\.|Dr\.|\b[A-Z]\.|[a-zA-Z_]+-[a-zA-Z_]+-[a-zA-Z_]+|[a-zA-Z_]+-[a-zA-Z_]+|[a-zA-Z_]+|--|'s|'t|'d|'ll|'m|'re|'ve|[.,:!?;\"'()\[\]&@#-]")
 
 WORD_TYPE_COUNT = 4000
+
+def weighted_choice(choices, prob):
+    r = random.uniform(0.0, prob)
+    upto = 0
+    for c in choices.items():
+        if upto + c[1] >= r:
+            return c[0]
+        upto += c[1]
 
 def file_input(userPath):
    path = input(userPath)
@@ -16,10 +25,12 @@ def file_input(userPath):
    else:
       return file_input('Enter an existing file directory: ')
 
-def probability(data):
-   for item in data:
-      print(item)
-      print(data[item], str('/'), len(trainingData), '=', data[item]/len(trainingData))
+# SANITY CHECK (THERE IS NO SANITY LEFT IN US)
+def getMaxProb(unigram):
+    probability = 0
+    for word in model[unigram].items():
+        probability += word[1]
+    return probability
 
 directory = file_input('Enter a directory: ')
 
@@ -119,8 +130,27 @@ for v in vWordTypes:
 
 #print(model['plot'])
 
-# SANITY CHECK (THERE IS NO SANITY LEFT IN US)
-probability = 0
-for word in model['plot'].items():
-    probability += word[1]
-print(probability)
+# Sentence generation
+print("Generating sentence...")
+
+# Pick a random word
+sentence = []
+
+# Grab random first word and append
+initialRand = random.choice(list(model.keys()))
+sentence.append(initialRand)
+
+accumulator = .0
+previousRandomWord = ''
+randomWord = ''
+while accumulator < 1: 
+    if accumulator == .0:
+        randomWord = weighted_choice(model[initialRand], getMaxProb(initialRand))
+        accumulator += model.get(initialRand).get(randomWord)
+    else:
+        previousRandomWord = randomWord
+        randomWord = weighted_choice(model[initialRand], getMaxProb(initialRand))
+        accumulator += model.get(previousRandomWord).get(randomWord)
+    sentence.append(randomWord)
+
+print(' '.join(sentence))
