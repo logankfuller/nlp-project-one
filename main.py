@@ -5,10 +5,27 @@ from collections import defaultdict
 from itertools import *
 import copy
 import random
+import pickle
+import pprint
 
 trivialTokenizer = RegexpTokenizer(r"\d+|Mr\.|Mrs\.|Dr\.|\b[A-Z]\.|[a-zA-Z_]+-[a-zA-Z_]+-[a-zA-Z_]+|[a-zA-Z_]+-[a-zA-Z_]+|[a-zA-Z_]+|--|'s|'t|'d|'ll|'m|'re|'ve|[.,:!?;\"'()\[\]&@#-]")
 
-WORD_TYPE_COUNT = 4000
+WORD_TYPE_COUNT = 12000
+
+# Create an initialized model where everything is 0
+model = {}
+
+def dictCopy(item):
+    temp = {}
+    newCopy = {}
+    temp = item
+    newCopy = temp
+    return newCopy
+
+def removeKey(mDict, key):
+    r = dict(mDict)
+    del r[key]
+    return r
 
 def weighted_choice(choices, prob):
     r = random.uniform(0.0, prob)
@@ -32,103 +49,113 @@ def getMaxProb(unigram):
         probability += word[1]
     return probability
 
-directory = file_input('Enter a directory: ')
+userEntry = 'N'
+if os.path.exists('model.pickle'):
+    userEntry = input("Use pickled dictionary? (Y/N)")
 
-trainingData = []
+if userEntry == 'Y' or userEntry == 'y':
+    with open('model.pickle', 'rb') as handle:
+        model = pickle.load(handle)
+else:
+    directory = file_input('Enter a directory: ')
 
-for file in os.listdir(directory):
-    if file.endswith('.txt'):
-        fileData = open(directory + '\\' + file).read()
-        trainingData += fileData
-    else:
-        print('Found non-txt file: ' + file)
+    trainingData = []
 
-trainingData = ''.join(trainingData)
+    for file in os.listdir(directory):
+        if file.endswith('.txt'):
+            fileData = open(directory + '\\' + file).read()
+            trainingData += fileData
+        else:
+            print('Found non-txt file: ' + file)
 
-# Begin tokenizing
-trainingData = trivialTokenizer.tokenize(trainingData)
+    trainingData = ''.join(trainingData)
 
-unigramCount = len(trainingData)
+    # Begin tokenizing
+    trainingData = trivialTokenizer.tokenize(trainingData)
 
-freqDist = nltk.FreqDist(trainingData)
-commonFreqDist = nltk.FreqDist(trainingData).most_common(WORD_TYPE_COUNT)
+    unigramCount = len(trainingData)
 
-bigrams = nltk.bigrams(trainingData)
+    freqDist = nltk.FreqDist(trainingData)
+    commonFreqDist = nltk.FreqDist(trainingData).most_common(WORD_TYPE_COUNT)
 
-# Create an initialized model where everything is 0
-model = {}
+    bigrams = nltk.bigrams(trainingData)
 
-# For each bigram, we sort by the first word
-vWordTypes = []
-sortedBigramDict = {}
-for x in commonFreqDist:
-    vWordTypes.append(x[0])
+    # For each bigram, we sort by the first word
+    vWordTypes = []
+    sortedBigramDict = {}
+    for x in commonFreqDist:
+        vWordTypes.append(x[0])
 
-for word in bigrams:
-    x = False
-    y = False
-    if word[0] in vWordTypes:
-        x = True 
-    if word[1] in vWordTypes:
-        y = True
+    for word in bigrams:
+        x = False
+        y = False
+        if word[0] in vWordTypes:
+            x = True 
+        if word[1] in vWordTypes:
+            y = True
 
-    tempList = []
-
-    if x == True and y == True:
-        if word[0] in sortedBigramDict:
-            tempList = sortedBigramDict[word[0]]
-        tempList.append(word[1])
-        sortedBigramDict[word[0]] = tempList
-
-# print(sortedBigramDict) 'leisurely': ['walk', 'turns', 'turns', 'blah', 'etc'], 
-
-# Creating an empty slate
-vTypeDict = {}
-for v in vWordTypes:
-    vTypeDict[v] = 0
-
-for v in vWordTypes:
-    # Copy temporary dictionary
-    tempDict = {}
-    tempDict = copy.copy(vTypeDict)
-
-    # Copy sorted bigram list
-    if v in sortedBigramDict:
         tempList = []
-        tempList = copy.copy(sortedBigramDict[v])
-    for x in tempList:
-        tempDict[x] += 1
 
-    # ------------ Smoothing
-    
-    # Get list of bigrams with counts 1-9
-    lowFreqBigramCount = 0
-    for bigram in tempDict.items():
-        if bigram[1] <= 9 and bigram[1] > 0:
-            lowFreqBigramCount += 1
+        if x == True and y == True:
+            if word[0] in sortedBigramDict:
+                tempList = sortedBigramDict[word[0]]
+            tempList.append(word[1])
+            sortedBigramDict[word[0]] = tempList
 
-    # Increase each bigram count by 1/lowFreqBigramCount
-    additiveBigram = 0
-    if lowFreqBigramCount != 0:
-        additiveBigram = 1/lowFreqBigramCount
-        for bigram in tempDict.items():
-            tempDict[bigram[0]] += additiveBigram
+    # print(sortedBigramDict) 'leisurely': ['walk', 'turns', 'turns', 'blah', 'etc'], 
 
-    # Increase each unigram count by V/lowFreqBigramCount
-    currentUnigramCount = 0
-    additiveUnigram = 0
-    if lowFreqBigramCount != 0:
-        additiveUnigram = WORD_TYPE_COUNT / lowFreqBigramCount
-        currentUnigramCount = freqDist[v] + additiveUnigram
+    # Creating an empty slate
+    vTypeDict = {}
+    for v in vWordTypes:
+        vTypeDict[v] = 0
+
+    for v in vWordTypes:
+        # Copy temporary dictionary
+        tempDict = {}
+        tempDict = dictCopy(vTypeDict)
+
+        # Copy sorted bigram list
+        if v in sortedBigramDict:
+            tempList = []
+            tempList = dictCopy(sortedBigramDict[v])
+        for x in tempList:
+            if x != v:
+                tempDict[x] += 1
+
+        # ------------ Smoothing
         
-    # Probabilities
-    for bigram in tempDict.items():
-        if currentUnigramCount != 0:
-            tempDict[bigram[0]] /= currentUnigramCount
+        # Get list of bigrams with counts 1-9
+        lowFreqBigramCount = 0
+        for bigram in tempDict.items():
+            if bigram[1] <= 9 and bigram[1] > 0:
+                lowFreqBigramCount += 1
 
-    model[v] = tempDict
+        # Increase each bigram count by 1/lowFreqBigramCount
+        additiveBigram = 0
+        if lowFreqBigramCount != 0:
+            additiveBigram = 1/lowFreqBigramCount
+            for bigram in tempDict.items():
+                tempDict[bigram[0]] += additiveBigram
 
-#print(model['plot'])
+        # Increase each unigram count by V/lowFreqBigramCount
+        currentUnigramCount = 0
+        additiveUnigram = 0
+        if lowFreqBigramCount != 0:
+            additiveUnigram = WORD_TYPE_COUNT / lowFreqBigramCount
+            currentUnigramCount = freqDist[v] + additiveUnigram
+            
+        # Probabilities
+        for bigram in tempDict.items():
+            if currentUnigramCount != 0:
+                tempDict[bigram[0]] /= currentUnigramCount
+
+        model[v] = tempDict
+
+    with open('model.pickle', 'wb') as handle:
+        pickle.dump(model, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+#pprint.pprint(model['plot'])
+    #print(model['plot'])
 
 # Sentence generation
 print("Generating sentence...")
@@ -137,20 +164,25 @@ print("Generating sentence...")
 sentence = []
 
 # Grab random first word and append
-initialRand = random.choice(list(model.keys()))
-sentence.append(initialRand)
+currentWord = random.choice(list(model.keys()))
+sentence.append(currentWord)
 
-accumulator = .0
-previousRandomWord = ''
-randomWord = ''
-while accumulator < 1: 
-    if accumulator == .0:
-        randomWord = weighted_choice(model[initialRand], getMaxProb(initialRand))
-        accumulator += model.get(initialRand).get(randomWord)
-    else:
-        previousRandomWord = randomWord
-        randomWord = weighted_choice(model[initialRand], getMaxProb(initialRand))
-        accumulator += model.get(previousRandomWord).get(randomWord)
-    sentence.append(randomWord)
+print('Initial Rand: ', currentWord)
+
+sentence_finished = False
+while not sentence_finished:
+    r = random.random()
+    accumulator = .0
+
+    for word in model[currentWord]:
+        accumulator += model[currentWord][word]
+
+        if accumulator >= r:
+            sentence.append(word)
+            currentWord = word
+            break
+
+    if(len(sentence) >= 10):
+        sentence_finished = True
 
 print(' '.join(sentence))
