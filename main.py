@@ -7,6 +7,7 @@ import copy
 import random
 import pickle
 import pprint
+from collections import OrderedDict
 
 trivialTokenizer = RegexpTokenizer(r"\d+|Mr\.|Mrs\.|Dr\.|\b[A-Z]\.|[a-zA-Z_]+-[a-zA-Z_]+-[a-zA-Z_]+|[a-zA-Z_]+-[a-zA-Z_]+|[a-zA-Z_]+|--|'s|'t|'d|'ll|'m|'re|'ve|[.,:!?;\"'()\[\]&@#-]")
 
@@ -154,7 +155,7 @@ else:
     with open('model.pickle', 'wb') as handle:
         pickle.dump(model, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-#pprint.pprint(model['plot'])
+#pprint.pprint(model['these'])
     #print(model['plot'])
 
 # Sentence generation
@@ -174,15 +175,40 @@ while not sentence_finished:
     r = random.random()
     accumulator = .0
 
+    #orderedModel = OrderedDict(sorted(model[currentWord].items(), key=lambda kv: kv[1], reverse=True))
+
     for word in model[currentWord]:
         accumulator += model[currentWord][word]
 
         if accumulator >= r:
-            sentence.append(word)
-            currentWord = word
-            break
+            if word != currentWord:
+                sentence.append(word)
+                currentWord = word
+                break
 
-    if(len(sentence) >= 10):
+    if(len(sentence) >= 30):
         sentence_finished = True
 
 print(' '.join(sentence))
+
+print(sentence)
+sentenceBigrams = nltk.bigrams(sentence)
+
+sentenceProbability = 1.0
+for bigram in sentenceBigrams:
+    print(model[bigram[0]][bigram[1]])
+    sentenceProbability *= model[bigram[0]][bigram[1]]
+
+print(sentenceProbability)
+
+
+
+
+
+
+
+
+# Calculating probability of sentences
+
+sentenceOne = "Go to the park and meet girls"
+sentenceTwo = "No, I'm not paying for the damage to your car"
