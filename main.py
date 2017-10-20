@@ -40,9 +40,9 @@ else:
 
     WORD_TYPE_COUNT = 4000
 
-    freqDist = nltk.FreqDist(trainingTokens)
+    #unigrams = nltk.FreqDist(trainingTokens)
     commonFreqDist = nltk.FreqDist(trainingTokens).most_common(WORD_TYPE_COUNT)
-    bigramFreqDist = nltk.FreqDist(nltk.bigrams(trainingTokens)).most_common(WORD_TYPE_COUNT)
+    bigramFreqDist = nltk.FreqDist(nltk.bigrams(trainingTokens))
 
      # Create an initialized model where everything is 0
     model = {}
@@ -55,12 +55,23 @@ else:
         for tempWord in commonFreqDist:
             rowToAdd[tempWord[0]] = 0
         model[freqWord[0]] = rowToAdd
-
+    
     # Clean up the bigram freq dist 
     cleanedBigramFreqDist = []
-    for bigram in bigramFreqDist:
+    for bigram in bigramFreqDist.items():
         if(bigram[0][0] in model and bigram[0][1] in model):
             cleanedBigramFreqDist.append(bigram)
+
+    unigramList = []
+    for item in cleanedBigramFreqDist:
+        unigramList.append(item[0][0])
+        unigramList.append(item[0][1])
+    
+    unigrams = nltk.FreqDist(unigramList)
+    #print(unigrams.items())
+
+    # How to access cleanedBigramFreqDist
+    # print(cleanedBigramFreqDist[0][0][0])
 
     # Now to populate the inner values with actual bigram data
     # bigram[0] returns first word, bigram[1] returns second word, value returns bigram count
@@ -71,28 +82,40 @@ else:
     
     # {'test': {'test1': 0}}
     # outer = 'test', inner = 'test1'
-
+    
     # Get list of bigrams with counts 1-9
     lowFreqBigramCount = 0
     for outer in model:
         for inner in model[outer]:
+            value = 0
             value = model[outer][inner]
             if value < 10 and value > 0:
                 lowFreqBigramCount += 1
-
+    
     # Increase each bigram count by 1/lowFreqBigramCount
     additiveBigram = 0
-    if lowFreqBigramCount != 0:
-        additiveBigram = 1/lowFreqBigramCount
-        for outer in model:
-            for inner in model[outer]:
-                model[outer][inner] += additiveBigram
-    '''
-        Need to add:
-            - increase unigram counts
-            - set probabilities
-            - rest of testing/bonuses
-    '''
+    additiveBigram = 1/lowFreqBigramCount
+    for outer in model:
+        for inner in model[outer]:
+            model[outer][inner] += additiveBigram
 
-    with open('model.pickle', 'wb') as handle:
-        pickle.dump(model, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    print(model['the'])
+    
+    # Increase each unigram count by WORD_TYPE_COUNT/lowFreqBigramCount
+    additiveUnigram = 0
+    additiveUnigram = WORD_TYPE_COUNT / lowFreqBigramCount
+    for unigram in unigrams:
+        unigrams[unigram] += additiveUnigram
+
+    #print(sum(model['asks'].values()))
+    
+    # Calculate the probabilities of each bigram count
+    for outer in model:
+        for inner in model[outer]:
+            #print(str(model[outer][inner]) + ' : ' + str(unigrams[outer]))
+            model[outer][inner] /= unigrams[outer]
+    
+    '''
+    #with open('model.pickle', 'wb') as handle:
+    #    pickle.dump(model, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    '''
